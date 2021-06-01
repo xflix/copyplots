@@ -9,7 +9,7 @@ $FarmVolumes = @('d:\','e:\','f:\','i:\','k:\','l:\','m:\')
 $PlotSize=110 
 ###############################################################
 
-Function Get-DiskSize { //Function Credit:https://www.easy365manager.com/powershell-get-disk-free-space/
+Function Get-DiskSize { //Credit:https://www.easy365manager.com/powershell-get-disk-free-space/
  $Disks = @()
  $DiskObjects = Get-WmiObject -namespace "root/cimv2" -query "SELECT Name, Capacity, FreeSpace FROM Win32_Volume"
  $DiskObjects | % {
