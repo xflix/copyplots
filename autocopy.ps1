@@ -1,50 +1,60 @@
-####################CONFIG#####################################
+#########################################################################
+####################CONFIG###############################################
+#########################################################################
 #This is the temp paths you are plotting to make sure to end them with "\"
 $TempPaths=@('J:\','G:\')
 #Subfolder in your farming Drives F.E. K:\{plots\}xyz123.plot
 $DiskFolderStructure='plots\'
-#All the drive letters you want to copy your plots to:
-$FarmVolumes = @('d:\','e:\','f:\','i:\','k:\','l:\','m:\')
+#All the drive letters you want to copy your plots to (no : or \)
+$FarmVolumes = @('d','z')
 #maximal size one plot needs in Volume
 $PlotSize=110 
-###############################################################
-
-Function Get-DiskSize { #Credit:https://www.easy365manager.com/powershell-get-disk-free-space/
- $Disks = @()
- $DiskObjects = Get-WmiObject -namespace "root/cimv2" -query "SELECT Name, Capacity, FreeSpace FROM Win32_Volume"
- $DiskObjects | % {
- $Disk = New-Object PSObject -Property @{
- Name           = $_.Name
- #Capacity       = [math]::Round($_.Capacity / 1073741824, 2) #in GB
- FreeSpace      = [math]::Round($_.FreeSpace / 1073741824, 2)
- #FreePercentage = [math]::Round($_.FreeSpace / $_.Capacity * 100, 1)
- }
- $Disks += $Disk
- }
- Write-Output $Disks | Sort-Object Name
-}
-
+#########################################################################
+#delete non pool plots? ATTENTION this might delete plots if $true!!!
+[bool] $delete=$false
+#deletes plot after certain date:
+$replace_date= [DateTime] "06/15/2021"
+#########################################################################
+#########################################################################
+#########################################################################
 
 while($true){ 
      for ($t=0; $t -lt $TempPaths.length; $t++) {
         $FinalFilePath=$TempPaths[$t]+"*.plot"
         $plotfile = @(dir $TempPaths[$t] -filter "*.plot")
          for ($p=0; $p -lt $plotfile.length; $p++) {
-            $Farms = @()
+            $FarmSizes = @()
             for ($f=0; $f -lt $FarmVolumes.length; $f++) {
-                $Farms += Get-DiskSize | ? {$_.Name -eq $FarmVolumes[$f]}
+                $drive = get-psdrive $FarmVolumes[$f]
+                $FarmSizes += [math]::Floor($drive.free/1073741824)
             }
-            if ($plotfile -ne $null ){
-                for ($i=0; $i -lt $Farms.length; $i++) {
-                        if ( $Farms[$i].FreeSpace -ge $PlotSize ){ 
-                            $PlotFolder=$Farms[$i].Name+$DiskFolderStructure
-                            robocopy $TempPaths[$t] $PlotFolder $plotfile[$p].Name /J /MOV /A-:SH
-                            break
-                        }
+            [bool] $all_full=$true
+            for ($i=0; $i -lt $FarmSizes.length; $i++) {
+                    if ( $FarmSizes[$i] -ge $PlotSize ){ 
+                        $all_full=$false
+                        $PlotFolder=$FarmVolumes[$i]+":\"+$DiskFolderStructure
+                        robocopy $TempPaths[$t] $PlotFolder $plotfile[$p].Name /J /MOV /A-:SH
+                        break
                     }
             }
+            if (($delete -eq $true) -and ($all_full -eq $true)){#all farms full delete one old plot
+:outer         for ($f=0; $f -lt $FarmVolumes.length; $f++) {
+                    $PlotFolder=$FarmVolumes[$t]+":\"+$DiskFolderStructure
+                    $old_plotfiles = @(dir $PlotFolder -filter "*.plot")
+                    for ($o=0; $o -lt $old_plotfiles.length; $o++) {
+                            $comp_date= $old_plotfiles[$o].CreationTime
+                            if ( ( $comp_date) -le ( $replace_date) ){ 
+                                echo "Deleted One Plot"
+                                $CompletePath= $PlotFolder+$old_plotfiles[$o].Name
+                                Remove-Item $CompletePath
+                                break outer
+                            }
+                    }
+                }
+            }
+            
         }
     }
     Write-Output "$(Get-Date)" #not needed just output to see it works
-    Start-Sleep -Seconds 300 #searches for new files after 300 seconds
+    Start-Sleep -Seconds 60 #searches for new files after 300 seconds
 }
