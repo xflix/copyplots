@@ -10,14 +10,21 @@ $FarmVolumes = @('d','z')
 #maximal size one plot needs in Volume
 $PlotSize=110 
 #########################################################################
-#delete non pool plots? ATTENTION this might delete plots if $true!!!
-[bool] $delete=$false
+#delete non pool plots if all drives full? ATTENTION this might delete plots if $true!!!
+[bool] $delete=$true
 #deletes plot after certain date:
 $replace_date= [DateTime] "06/15/2021"
 #########################################################################
 #########################################################################
 #########################################################################
 
+
+if ($delete -eq $true){
+    Write-Warning "##################################################################"
+    Write-Warning "#       You enabled delete after date wich is still in BETA      #"
+    Write-Warning "#            This might potentially delete your plots            #"
+    Write-Warning "##################################################################"
+}
 while($true){ 
      for ($t=0; $t -lt $TempPaths.length; $t++) {
         $FinalFilePath=$TempPaths[$t]+"*.plot"
