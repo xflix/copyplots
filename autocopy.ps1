@@ -11,7 +11,7 @@ $FarmVolumes = @('d','z')
 $PlotSize=110 
 #########################################################################
 #delete non pool plots if all drives full? ATTENTION this might delete plots if $true!!!
-[bool] $delete=$true
+[bool] $delete=$false
 #deletes plot after certain date:
 $replace_date= [DateTime] "06/15/2021"
 #########################################################################
