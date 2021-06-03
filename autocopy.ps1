@@ -10,10 +10,11 @@ $FarmVolumes = @('d','z')
 #maximal size one plot needs in Volume
 $PlotSize=110 
 #########################################################################
-#delete non pool plots if all drives full? ATTENTION this might delete plots if $true!!!
+#sequentially deletes old (non pool) plots if all drives full? ATTENTION this might delete plots if $true!!!
 [bool] $delete=$false
-#deletes plot after certain date:
-$replace_date= [DateTime] "06/15/2021"
+#deletes plot after certain date (date you started plotting pool plots) (DD:MM:YYYY HH:MM):
+#NEEDS TO BE SET PROPER DOUBLE CHECK!!!
+$replace_date= [DateTime] "06/15/2021 16:45"
 #########################################################################
 #########################################################################
 #########################################################################
@@ -44,6 +45,7 @@ while($true){
                         break
                     }
             }
+            [bool] $one_deleted=$false
             if (($delete -eq $true) -and ($all_full -eq $true)){#all farms full delete one old plot
 :outer         for ($f=0; $f -lt $FarmVolumes.length; $f++) {
                     $PlotFolder=$FarmVolumes[$t]+":\"+$DiskFolderStructure
@@ -54,12 +56,18 @@ while($true){
                                 echo "Deleted One Plot"
                                 $CompletePath= $PlotFolder+$old_plotfiles[$o].Name
                                 Remove-Item $CompletePath
+                                $one_deleted=$true
                                 break outer
                             }
                     }
                 }
             }
-            
+            if (($delete -eq $false) -and ($all_full -eq $true)){
+                Write-Warning "Can not Copy: All Drives are Full"
+            }
+            if (($delete -eq $true) -and ($all_full -eq $true) -and ($one_deleted -eq $false) ){
+                Write-Warning "Can not Copy: All Drives are Full with New (Pooling) Plots"
+            }    
         }
     }
     Write-Output "$(Get-Date)" #not needed just output to see it works
